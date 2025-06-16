@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Pendukung Keputusan Beasiswa SAGO</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="index.html" class="btn" style="float: left;">← Kembali</a>
+            <h1>🎓 Sistem Pendukung Keputusan Beasiswa SAGO</h1>
+            <p>Metode Weighted Product untuk Seleksi Penerima Beasiswa</p>
+        </div>
+
+        <div class="content">
+            <!-- Input Form -->
+            <div class="section">
+                <h2>
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                    Input Data Calon Penerima Beasiswa
+                </h2>
+                <form id="inputForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="nama">Nama Lengkap:</label>
+                            <input type="text" id="nama" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="nilaiRapor">Nilai Rata-rata Raport:</label>
+                            <input type="number" id="nilaiRapor" min="0" max="100" step="0.1" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="penghasilan">Penghasilan Orang Tua (Rp):</label>
+                            <input type="number" id="penghasilan" min="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="tanggungan">Jumlah Tanggungan Keluarga:</label>
+                            <input type="number" id="tanggungan" min="1" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="prestasi">Prestasi:</label>
+                            <select id="prestasi" required>
+                                <option value="">Pilih Prestasi</option>
+                                <option value="1">Tidak pernah mengikuti lomba</option>
+                                <option value="2">Pernah mengikuti perlombaan</option>
+                                <option value="3">Juara Tingkat Kabupaten/Kota</option>
+                                <option value="4">Juara Tingkat Provinsi</option>
+                                <option value="5">Juara Tingkat Nasional</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="keaktifan">Keaktifan Organisasi:</label>
+                            <select id="keaktifan" required>
+                                <option value="">Pilih Keaktifan</option>
+                                <option value="1">Tidak pernah mengikuti organisasi/kegiatan</option>
+                                <option value="2">Anggota aktif di 1 organisasi/kegiatan</option>
+                                <option value="3">Anggota aktif di ≥2 organisasi/kegiatan</option>
+                                <option value="4">Pengurus inti aktif di 1 organisasi/kegiatan</option>
+                                <option value="5">Pengurus inti aktif di ≥2 organisasi/kegiatan</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="section">
+                        <!-- Add near other buttons -->
+                        <button type="submit" class="btn">Tambah Data</button>
+                        <button type="button" class="btn btn-secondary" onclick="calculateAll()">Hitung Semua</button>
+                        <button type="button" class="btn btn-secondary" onclick="resetData()">Reset Data</button>
+                        <button type="button" class="btn btn-secondary" onclick="loadSampleData()">Load Sample Data</button>
+                        <button type="button" class="btn btn-secondary" onclick="downloadAllData()">Download Data & Hasil</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Data Alternatif -->
+            <div class="section">
+                <h2>
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
+                    Data Alternatif
+                </h2>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>Nama</th>
+                                <th>Nilai Rapor</th>
+                                <th>Penghasilan</th>
+                                <th>Tanggungan</th>
+                                <th>Prestasi</th>
+                                <th>Keaktifan</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dataTable">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Nilai Skala -->
+            <div class="section hidden" id="skalaSection">
+                <h2>
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M9 11H7v6h2v-6zm4 0h-2v6h2v-6zm4 0h-2v6h2v-6zm2.5-9H19v2h-1.5v.5h-1V4h-1.5V2H8v2H6.5v.5h-1V2H4v2H2.5C1.67 4 1 4.67 1 5.5v15C1 21.33 1.67 22 2.5 22h17c.83 0 1.5-.67 1.5-1.5v-15C22 4.67 21.33 4 20.5 4z"/></svg>
+                    Nilai Skala Kriteria
+                </h2>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Alternatif</th>
+                                <th>C1 (Nilai)</th>
+                                <th>C2 (Penghasilan)</th>
+                                <th>C3 (Tanggungan)</th>
+                                <th>C4 (Prestasi)</th>
+                                <th>C5 (Keaktifan)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="skalaTable">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Vector S dan V -->
+            <div class="section hidden" id="vectorSection">
+                <h2>
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M7 14l5-5 5 5z"/></svg>
+                    Perhitungan Vector S dan Vector V
+                </h2>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Alternatif</th>
+                                <th>Vector S</th>
+                                <th>Vector V</th>
+                            </tr>
+                        </thead>
+                        <tbody id="vectorTable">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Hasil Perangkingan -->
+            <div class="section hidden" id="rankingSection">
+                <h2>
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M3 17h18v2H3zm0-6h18v2H3zm0-6h18v2H3z"/></svg>
+                    Hasil Perangkingan
+                </h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalCandidates">0</div>
+                        <div class="stat-label">Total Kandidat</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="scholarshipRecipients">0</div>
+                        <div class="stat-label">Penerima Beasiswa</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="rejectedCandidates">0</div>
+                        <div class="stat-label">Tidak Lolos</div>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Ranking</th>
+                                <th>Nama</th>
+                                <th>Nilai Akhir</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rankingTable">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data storage
+        let alternatives = [];
+        
+        // Bobot kriteria yang sudah dinormalisasi
+        const weights = {
+            w1: 0.25, // Nilai rata-rata rapor (benefit)
+            w2: 0.25, // Penghasilan orang tua (cost)
+            w3: 0.15, // Jumlah tanggungan (benefit)
+            w4: 0.20, // Prestasi (benefit)
+            w5: 0.15  // Keaktifan (benefit)
+        };
+
+        // Fungsi untuk mengkonversi nilai ke skala
+        function convertToScale(type, value) {
+            switch(type) {
+                case 'nilai':
+                    if (value < 75) return 1;
+                    if (value >= 75 && value <= 80) return 2;
+                    if (value >= 81 && value <= 85) return 3;
+                    if (value >= 86 && value <= 90) return 4;
+                    if (value > 90) return 5;
+                    break;
+                case 'penghasilan':
+                    if (value < 1000000) return 5;
+                    if (value >= 1000000 && value < 2500000) return 4;
+                    if (value >= 2500000 && value < 4000000) return 3;
+                    if (value >= 4000000 && value < 6000000) return 2;
+                    if (value >= 6000000) return 1;
+                    break;
+                case 'tanggungan':
+                    if (value === 1) return 1;
+                    if (value === 2) return 2;
+                    if (value === 3) return 3;
+                    if (value === 4) return 4;
+                    if (value >= 5) return 5;
+                    break;
+                default:
+                    return parseInt(value);
+            }
+        }
+
+        // Fungsi untuk format rupiah
+        function formatRupiah(number) {
+            return new Intl.NumberFormat('id-ID', {
+                style: 'currency',
+                currency: 'IDR',
+                minimumFractionDigits: 0
+            }).format(number);
+        }
+
+        // Fungsi untuk format prestasi
+        function formatPrestasi(value) {
+            const prestasi = {
+                1: "Tidak pernah mengikuti lomba",
+                2: "Pernah mengikuti perlombaan",
+                3: "Juara Tingkat Kabupaten/Kota",
+                4: "Juara Tingkat Provinsi",
+                5: "Juara Tingkat Nasional"
+            };
+            return prestasi[value] || '';
+        }
+
+        // Fungsi untuk format keaktifan
+        function formatKeaktifan(value) {
+            const keaktifan = {
+                1: "Tidak pernah mengikuti organisasi/kegiatan",
+                2: "Anggota aktif di 1 organisasi/kegiatan",
+                3: "Anggota aktif di ≥2 organisasi/kegiatan",
+                4: "Pengurus inti aktif di 1 organisasi/kegiatan",
+                5: "Pengurus inti aktif di ≥2 organisasi/kegiatan"
+            };
+            return keaktifan[value] || '';
+        }
+
+        document.getElementById('inputForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                nama: document.getElementById('nama').value,
+                nilaiRapor: parseFloat(document.getElementById('nilaiRapor').value),
+                penghasilan: parseInt(document.getElementById('penghasilan').value),
+                tanggungan: parseInt(document.getElementById('tanggungan').value),
+                prestasi: parseInt(document.getElementById('prestasi').value),
+                keaktifan: parseInt(document.getElementById('keaktifan').value)
+            };
+
+            alternatives.push(formData);
+            updateDataTable();
+            this.reset();
+        });
+
+        // Update data table
+        function updateDataTable() {
+            const tbody = document.getElementById('dataTable');
+            tbody.innerHTML = '';
+
+            alternatives.forEach((alt, index) => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${alt.nama}</td>
+                    <td>${alt.nilaiRapor}</td>
+                    <td>${formatRupiah(alt.penghasilan)}</td>
+                    <td>${alt.tanggungan}</td>
+                    <td>${formatPrestasi(alt.prestasi)}</td>
+                    <td>${formatKeaktifan(alt.keaktifan)}</td>
+                    <td><button class="btn" onclick="removeAlternative(${index})" style="padding: 8px 15px; font-size: 12px;">Hapus</button></td>
+                `;
+            });
+        }
+
+        // Remove alternative
+        function removeAlternative(index) {
+            alternatives.splice(index, 1);
+            updateDataTable();
+            
+            if (alternatives.length === 0) {
+                document.getElementById('skalaSection').classList.add('hidden');
+                document.getElementById('vectorSection').classList.add('hidden');
+                document.getElementById('rankingSection').classList.add('hidden');
+            }
+        }
+
+        function calculateAll() {
+            if (alternatives.length === 0) {
+                alert('Mohon tambahkan data terlebih dahulu!');
+                return;
+            }
+
+            calculateScales();
+            calculateVectors();
+            calculateRanking();
+            
+            // Show result
+            document.getElementById('skalaSection').classList.remove('hidden');
+            document.getElementById('vectorSection').classList.remove('hidden');
+            document.getElementById('rankingSection').classList.remove('hidden');
+        }
+
+        // Calculate scales
+        function calculateScales() {
+            const tbody = document.getElementById('skalaTable');
+            tbody.innerHTML = '';
+
+            alternatives.forEach((alt, index) => {
+                const scales = {
+                    c1: convertToScale('nilai', alt.nilaiRapor),
+                    c2: convertToScale('penghasilan', alt.penghasilan),
+                    c3: convertToScale('tanggungan', alt.tanggungan),
+                    c4: alt.prestasi,
+                    c5: alt.keaktifan
+                };
+
+                alt.scales = scales;
+
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>A${index + 1}</td>
+                    <td>${scales.c1}</td>
+                    <td>${scales.c2}</td>
+                    <td>${scales.c3}</td>
+                    <td>${scales.c4}</td>
+                    <td>${scales.c5}</td>
+                `;
+            });
+        }
+
+        // Calculate vectors
+        function calculateVectors() {
+            const tbody = document.getElementById('vectorTable');
+            tbody.innerHTML = '';
+
+            // Calculate Vector S
+            let totalS = 0;
+            alternatives.forEach(alt => {
+                // S = (X1^w1) * (X2^-w2) * (X3^w3) * (X4^w4) * (X5^w5)
+                // Note: C2 is cost criteria, so we use negative weight
+                alt.vectorS = Math.pow(alt.scales.c1, weights.w1) * 
+                             Math.pow(alt.scales.c2, -weights.w2) * 
+                             Math.pow(alt.scales.c3, weights.w3) * 
+                             Math.pow(alt.scales.c4, weights.w4) * 
+                             Math.pow(alt.scales.c5, weights.w5);
+                totalS += alt.vectorS;
+            });
+
+            // Calculate Vector V
+            alternatives.forEach((alt, index) => {
+                alt.vectorV = alt.vectorS / totalS;
+
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>A${index + 1}</td>
+                    <td>${alt.vectorS.toFixed(6)}</td>
+                    <td>${alt.vectorV.toFixed(6)}</td>
+                `;
+            });
+        }
+
+        // Calculate ranking
+        function calculateRanking() {
+            // Sort by Vector V (descending)
+            const sortedAlternatives = [...alternatives].sort((a, b) => b.vectorV - a.vectorV);
+            
+            const tbody = document.getElementById('rankingTable');
+            tbody.innerHTML = '';
+
+            // Assuming top 10 get scholarship (or 50% of candidates)
+            const scholarshipCount = Math.min(10, Math.ceil(alternatives.length * 0.5));
+            
+            sortedAlternatives.forEach((alt, index) => {
+                const rank = index + 1;
+                const status = rank <= scholarshipCount ? 'Beasiswa' : 'Tidak Beasiswa';
+                const statusClass = status === 'Beasiswa' ? 'status-beasiswa' : 'status-tidak';
+                
+                let rowClass = '';
+                if (rank === 1) rowClass = 'rank-1';
+                else if (rank === 2) rowClass = 'rank-2';
+                else if (rank === 3) rowClass = 'rank-3';
+
+                const row = tbody.insertRow();
+                row.className = rowClass;
+                row.innerHTML = `
+                    <td><strong>${rank}</strong></td>
+                    <td>${alt.nama}</td>
+                    <td>${alt.vectorV.toFixed(6)}</td>
+                    <td><span class="status-badge ${statusClass}">${status}</span></td>
+                `;
+            });
+
+            // Update statistics
+            document.getElementById('totalCandidates').textContent = alternatives.length;
+            document.getElementById('scholarshipRecipients').textContent = scholarshipCount;
+            document.getElementById('rejectedCandidates').textContent = alternatives.length - scholarshipCount;
+        }
+
+        // Reset data
+        function resetData() {
+            if (confirm('Apakah Anda yakin ingin menghapus semua data?')) {
+                alternatives = [];
+                updateDataTable();
+                document.getElementById('skalaSection').classList.add('hidden');
+                document.getElementById('vectorSection').classList.add('hidden');
+                document.getElementById('rankingSection').classList.add('hidden');
+            }
+        }
+
+        // Load sample data
+        function loadSampleData() {
+            const sampleData = [
+                {nama: "Aisyah Putri", nilaiRapor: 88, penghasilan: 2800000, tanggungan: 4, prestasi: 3, keaktifan: 5},
+                {nama: "Bima Prasetya", nilaiRapor: 82, penghasilan: 1700000, tanggungan: 2, prestasi: 2, keaktifan: 3},
+                {nama: "Citra Lestari", nilaiRapor: 93, penghasilan: 5000000, tanggungan: 1, prestasi: 5, keaktifan: 4},
+                {nama: "Dimas Aditya", nilaiRapor: 78, penghasilan: 900000, tanggungan: 3, prestasi: 1, keaktifan: 2},
+                {nama: "Eka Saputra", nilaiRapor: 72, penghasilan: 2300000, tanggungan: 5, prestasi: 2, keaktifan: 1},
+                {nama: "Fani Oktaviani", nilaiRapor: 87, penghasilan: 6200000, tanggungan: 3, prestasi: 3, keaktifan: 5},
+                {nama: "Galang Nugroho", nilaiRapor: 76, penghasilan: 3000000, tanggungan: 2, prestasi: 2, keaktifan: 3},
+                {nama: "Hana Maharani", nilaiRapor: 91, penghasilan: 4500000, tanggungan: 1, prestasi: 4, keaktifan: 4},
+                {nama: "Ilham Ramadhan", nilaiRapor: 83, penghasilan: 1800000, tanggungan: 4, prestasi: 3, keaktifan: 2},
+                {nama: "Jihan Aulia", nilaiRapor: 89, penghasilan: 3300000, tanggungan: 5, prestasi: 2, keaktifan: 4},
+                {nama: "Kevin Aditya", nilaiRapor: 92, penghasilan: 6500000, tanggungan: 2, prestasi: 5, keaktifan: 5},
+                {nama: "Lestari Amalia", nilaiRapor: 85, penghasilan: 4800000, tanggungan: 4, prestasi: 2, keaktifan: 3},
+                {nama: "Muhammad Rizky", nilaiRapor: 79, penghasilan: 3400000, tanggungan: 1, prestasi: 1, keaktifan: 2},
+                {nama: "Nabila Syifa", nilaiRapor: 88, penghasilan: 1900000, tanggungan: 3, prestasi: 3, keaktifan: 4},
+                {nama: "Oka Surya", nilaiRapor: 70, penghasilan: 950000, tanggungan: 5, prestasi: 1, keaktifan: 1},
+                {nama: "Putri Andini", nilaiRapor: 94, penghasilan: 4200000, tanggungan: 3, prestasi: 4, keaktifan: 5},
+                {nama: "Qory Maulida", nilaiRapor: 87, penghasilan: 2900000, tanggungan: 2, prestasi: 3, keaktifan: 4},
+                {nama: "Rafi Hidayat", nilaiRapor: 84, penghasilan: 2000000, tanggungan: 4, prestasi: 2, keaktifan: 3},
+                {nama: "Salsabila Zahra", nilaiRapor: 95, penghasilan: 4300000, tanggungan: 3, prestasi: 5, keaktifan: 5},
+                {nama: "Tegar Mahendra", nilaiRapor: 77, penghasilan: 3200000, tanggungan: 2, prestasi: 1, keaktifan: 2}
+            ];
+            
+            alternatives = sampleData;
+            updateDataTable();
+
+            alert('Data contoh berhasil dimuat!');
+        }
+
+        function downloadAllData() {
+            const needsCalculation = alternatives.length > 0 && !alternatives[0].hasOwnProperty('vectorV');
+            if (needsCalculation) {
+                calculateAll();
+            }
+
+            let csvContent = "DATA BEASISWA SAGO SCHOLARSHIP\n\n";
+            
+            csvContent += "DATA ALTERNATIF\n";
+            csvContent += "Nama,Nilai Rapor,Penghasilan,Tanggungan,Prestasi,Keaktifan\n";
+            alternatives.forEach(alt => {
+                csvContent += `${alt.nama},${alt.nilaiRapor},${alt.penghasilan},${alt.tanggungan},${formatPrestasi(alt.prestasi)},${formatKeaktifan(alt.keaktifan)}\n`;
+            });
+            
+            csvContent += "\n\n";
+            
+            if (alternatives.length > 0 && alternatives[0].hasOwnProperty('vectorV')) {
+                csvContent += "HASIL PERHITUNGAN\n";
+                csvContent += "Nama,Nilai S,Nilai V,Ranking,Status\n";
+                
+                const sortedData = [...alternatives].sort((a, b) => b.vectorV - a.vectorV);
+                
+                sortedData.forEach((alt, index) => {
+                    const status = index < Math.min(10, Math.ceil(alternatives.length * 0.5)) ? 'Beasiswa' : 'Tidak Beasiswa';
+                    csvContent += `${alt.nama},${alt.vectorS.toFixed(6)},${alt.vectorV.toFixed(6)},${index + 1},${status}\n`;
+                });
+            }
+            
+            const date = new Date().toISOString().slice(0,10);
+            const filename = `data_beasiswa_${date}.csv`;
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            
+            if (navigator.msSaveBlob) {
+                navigator.msSaveBlob(blob, filename);
+            } else {
+                const url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", filename);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        }
+
+    </script>
+</body>
+</html>
